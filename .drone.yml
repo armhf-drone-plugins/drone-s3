@@ -1,0 +1,48 @@
+clone:
+  path: github.com/drone-plugins
+  recursive: true
+
+build:
+  image: armhfbuild/golang:1.5
+  environment:
+    - GO15VENDOREXPERIMENT=1
+    - GOOS=linux
+    - GOARCH=arm
+    - CGO_ENABLED=0
+  commands:
+    - git clone --single-branch https://github.com/drone-plugins/drone-s3
+    - cd drone-s3
+    - sed -i 's/FROM gliderlabs\/alpine/FROM armhfbuild\/alpine/' Dockerfile
+    - go get
+    - go build
+    - go test
+
+publish:
+  docker:
+    context: drone-s3
+    file: drone-s3/Dockerfile
+    username: $$DOCKER_USER
+    email: $$DOCKER_EMAIL
+    password: $$DOCKER_PASSWORD
+    repo: armhfplugins/drone-s3
+    storage_driver: overlay
+    when:
+      repo: armhf-drone-plugins/drone-s3
+      branch: master
+
+notify:
+  slack:
+    webhook_url: $$SLACK_WEBHOOK_URL
+    channel: armhf
+
+plugin:
+  name: S3
+  desc: Publish files and artifacts to Amazon S3
+  type: publish
+  image: armhfplugins/drone-s3
+  labels:
+    - publish
+    - artifacts
+    - amazon
+    - aws
+    - s3
